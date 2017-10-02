@@ -50,20 +50,26 @@ The file MersenneTwister.h contains the random number generator
 which is used by FastIndep.
  
 To run the programs copy the C++ files to a new directory. To create the executable, 
-open a terminal window in the directory containing  the C++ files and type 
-   g++ -Wall -O *.cpp 
+open a terminal window in the directory containing the C++ files and type 
+
+    g++ -v -O -Wall main.cpp DataMethods.cpp -o fastindep
+    
 (In the line above the second flag is minus O, not number zero). 
-This will create an executable a.out in the directory.
+This will create an executable fastindep in the directory.
 
 If the parameter file is params.txt and the data file is dat.txt 
-then the command for running the code is 
-   ./a.out dat.txt params.txt 
+then the command for running the code is
+
+    ./fastindep dat.txt params.txt 
+   
 The parameter and output files should be in the same directory 
 or linked to the same directory as the executable a.out. If the 
 number of runs is very large, the intermediate output written to 
 the screen can be very voluminous and can slow down the execution of
-the program. In this circumstance it is better to use the command  
-   ./a.out dat.txt params.txt > /dev/null 
+the program. In this circumstance it is better to use the command
+
+   ./fastindep dat.txt params.txt > /dev/null 
+
 Running the command will not affect the results in any way. 
 
 The output file outfile.txt will be written to the directory 
@@ -100,11 +106,14 @@ is a problem flagged by check_symm it is best to repair the problem and run
 check_symm again to ensure that there are no further problems with the data set.  
 
 To run the check_symm copy the C++ file check_symmp.cpp to a new directory. To create 
-the executable, open a terminal window in the directory containing  check_symm.cpp and type 
-   g++ -Wall -O *.cpp 
+the executable, open a terminal window in the directory containing check_symm.cpp and type
+ 
+    g++ -O -Wall check_symm.cpp -o check_symm
+    
 (In the line above the second flag is minus O, not number zero). 
-This will create an executable a.out in the directory. Then type
-./a.out dat.txt. 
+This will create an executable check_symm  in the directory. Then type
+
+    ./check_symm dat.txt
 
 All warning messages will appear on the screen including the lines where there are problems
 with the data file. 
