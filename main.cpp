@@ -8,6 +8,10 @@
 // and run the program.  
 // Author: Joseph Abraham May 2013
 
+// Added command line options
+// Fausto Rodriguez 2017
+// TODO(faustovrz@gmail.com): Print usage to stdout when called without args.
+
 #include "./headers.h"
 #include <istream>
 #include <ostream>
@@ -25,6 +29,10 @@
 #include <cerrno>
 #include <algorithm>
 #include <functional>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -40,87 +48,92 @@ bool setcomp(vector<unsigned> vec1, vector<unsigned> vec2)
        } 
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char **argv)
 {
-   if (argc < 3) {
-    cout << " Must specify datafile and parameter input file " << endl;
-    cout << " program aborting " << endl;
-    return 0;
-   }
 
 	clock_t t_begin,t_end; 
 	t_begin = clock();
 
+	unsigned i,j,linenum;
+	
+	stringstream strstr;
+	string this_ent,s;
 
-   unsigned i,j,linenum;
-	
-   stringstream strstr;
-   string this_ent,s;
-	
-   double lowLDlimit = numeric_limits<double>::quiet_NaN();
-   bool seed_specified = false;
-   int num_sweeps = 0;
-   unsigned long longseed = 0;
-	
+	double lowLDlimit = numeric_limits<double>::quiet_NaN();
+	int num_sweeps = 1;
+	bool seed_specified = false;
+	unsigned long longseed = 0;
+	string outputfile = "out.txt";
+	string datafile = "dat.txt";
 
-   string homedir = "./";
-   string datafile = homedir + argv[1]; // original data file
-   ifstream gg(datafile.c_str());
-    if (!gg) 
-    {
-     cout << " File " << datafile << " not found ... program aborting " << endl;
-     return 0;
-    }
+	//int index; //for printing unused arguments
 	
+	int opt;
 
-	linenum = 1;
-	
-	string param_input_file = homedir + argv[2];
-    cout << " Reading in data from file " << param_input_file << endl;
-	ifstream param_input_file_stream(param_input_file.c_str());
-	if (!param_input_file_stream) 
-    {
-		cout << " File " << param_input_file << " not found ... program aborting " << endl;
-		return 0;
-    }
-    while(getline(param_input_file_stream,s)){
-		strstr.clear();
-		strstr.str(s);
-		j = 0;
-		while(strstr >> this_ent){
-			j++;
-			if(j > 1) continue;
-			if(linenum == 1){
-				lowLDlimit = (double) atof(this_ent.c_str());
-				if(lowLDlimit <= 0) 
-				{ 
-					cout << lowLDlimit << " not acceptable cut-off " << endl;
-					cout << " Check parameter.txt file. Program aborting " << endl; 
-					throw exception();
-				} 
-			} else if(linenum == 2){
-				num_sweeps = (unsigned) atof(this_ent.c_str());
-				if(num_sweeps <= 0) 
-				{
-					cout <<  num_sweeps << " Defective value for number of sweeps " << endl;
-					cout << " Check parameter.txt file. Program aborting " << endl; 
-					throw exception();
-				} 
-			} else if(linenum == 3){
-				longseed = atol(this_ent.c_str()); 
-				if(longseed > 0 )
-				{
-					seed_specified = true;
-				}else{ 
-					cout << " Invalid choice of seed for random number generator " << endl;
-					cout << " Will use program generated seed instead " << endl;
-					seed_specified = false;
-				}
-			} else {continue;}
-			linenum++;
+	opterr = 0;
+
+	while ((opt = getopt (argc, argv, "t:n:s:i:o:")) != EOF)
+	    switch (opt)
+	    {
+	    case 't':
+	        lowLDlimit = (double) atof(optarg);
+
+			if(lowLDlimit <= 0) 
+			{ 
+				cout << lowLDlimit << " not acceptable threshold (-t)" << endl;
+				throw exception();
+			}
+	        break;
+
+	    case 'n':
+	        num_sweeps = (unsigned) atof(optarg);
+			if(num_sweeps <= 0) 
+			{
+				cout <<  num_sweeps << " Defective value for number of sweeps (-n) " << endl;
+				throw exception();
+			} 
+	        break;
+
+	    case 's':
+	    	longseed = atof(optarg);
+			if(longseed > 0 )
+			{
+				seed_specified = true;
+			}else{ 
+				cout << " Invalid choice of seed for random number generator (-s)" << endl;
+				cout << " Will use program generated seed instead " << endl;
+			}
+	        break;
+
+	    case 'i':
+	        datafile = string(optarg);
+	        break;
+
+	    case 'o':
+	        outputfile = string(optarg);
+	        break;
+
+	    case '?':
+	    	fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+	    	return 1;
+	    default:
+	        abort ();
+	    }
+
+//	fprintf (stderr, "lowLDlimit = %f, num_sweeps = %d, longseed = %lu\n",
+//	        lowLDlimit, num_sweeps, longseed);
+//	fprintf (stderr, "datafile = %s\n",datafile.c_str());
+//	for (index = optind ; index < argc; index++)
+//	    fprintf (stderr, "Non-option argument %s ignored \n", argv[index]);
+
+
+	 ifstream gg(datafile.c_str());
+	 	if (!gg)
+		{
+			cout << " File " << datafile << " not found ... program aborting " << endl;
+			return 0;
 		}
-	}
-			 
+	 
 
 // Define data object 
 	
@@ -144,7 +157,7 @@ int main(int argc, char* argv[])
 	
 	//	string outprefix = "indep_set_";
 	//	string outputfile = outprefix + argv[1];
-	string outputfile = "outfile.txt";
+	// string outputfile = "outfile.txt";
 	ofstream outfile(outputfile.c_str());
 	
 	
@@ -200,13 +213,12 @@ int main(int argc, char* argv[])
 				if(this_ent != (OurData.SNP_vector[linenum-2])->SNPname){
 					cout << "Discrepancy in names entry in line " << linenum << "of datafile :: " << 
 					this_ent << " " << OurData.SNP_vector[linenum-2]->SNPname;
-					cout << " Program Terminating " << endl;
 					exit(-1);
 				}
 			}else{
 				 if(j != (linenum -1)){ // skip diagonal element 
 					 currentval = atof(this_ent.c_str());
-					 if(currentval <= lowLDlimit){
+					 if(currentval < lowLDlimit){
 						 sep_count[j-1] = j;
 					 }
 				 }
@@ -244,7 +256,7 @@ int main(int argc, char* argv[])
 	
    outfile << " Data read in from file " << datafile << endl;
    outfile << " Total number of elements in dataset = "<< numents << endl;
-   outfile << " "<< num_sweeps << " sets of elements with pairwise association <= ";
+   outfile << " "<< num_sweeps << " sets of elements with pairwise association < ";
    outfile << lowLDlimit << " requested" << endl ;
 
 	
@@ -492,7 +504,7 @@ int main(int argc, char* argv[])
 		}else{
 			outfile << " Using user supplied seed  "<< longseed << " for Mersenne Twister" << endl;
 		}
-		outfile << " "<< num_sweeps << " sets of elements with pairwise association <= " <<\
+		outfile << " "<< num_sweeps << " sets of elements with pairwise association <" <<\
 		lowLDlimit << " requested" << endl ;
 		outfile << " Number of singletons is " << singletons.size() << endl;
 		outfile << " Output from the deterministic heuristic " << endl << endl;
@@ -648,11 +660,7 @@ int main(int argc, char* argv[])
 	
 	
     outfile << "-----------------------------------------------------------------" << endl;	
-	
+	cout << " Results written to file " << outputfile << endl;
     cout << " Program terminating " << endl;
-	
 	return 0;
 } 
-
-	
-
